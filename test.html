@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расширенный редактор TinyMCE</title>
+    <script src="https://cdn.tiny.cloud/1/xredqu0kjvc583eb1yuke9x3ytidrxnair6hiywj8z0yuinr/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3f37c9;
+            --secondary: #4cc9f0;
+            --danger: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        #main-editor {
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+        }
+
+        /* Панель редактора */
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .editor-header {
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .editor-content {
+            flex: 1;
+            padding: 0;
+            position: relative;
+        }
+
+        /* Панель шаблонов */
+        .templates-panel {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .templates-header {
+            padding: 16px;
+            background: linear-gradient(135deg, var(--secondary) 0%, #4895ef 100%);
+            color: white;
+        }
+
+        .templates-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .template-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .templates-list {
+            flex: 1;
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            overflow-y: auto;
+        }
+
+        .template-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #e9ecef;
+            transition: var(--transition);
+        }
+
+        .template-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .template-item.selected {
+            background-color: #e6f2ff;
+            font-weight: 500;
+        }
+
+        .template-item:last-child {
+            border-bottom: none;
+        }
+
+        .edit-template {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .edit-template:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        /* Кнопки */
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #3ab8dd;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #e5177b;
+        }
+
+        /* Иконки */
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .editor-panel,
+            .templates-panel {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Левая панель - редактор -->
+        <div class="editor-panel">
+            <div class="editor-header">
+                <h3>Редактор контента</h3>
+            </div>
+            <div class="editor-content">
+                <textarea id="main-editor">
+                    <h1>Добро пожаловать!</h1>
+                    <p>Начните создавать свой контент здесь...</p>
+                </textarea>
+            </div>
+        </div>
+        
+        <!-- Правая панель - шаблоны -->
+        <div class="templates-panel">
+            <div class="templates-header">
+                <h3>Шаблоны и компоненты</h3>
+            </div>
+            <div class="templates-body">
+                <div class="template-controls">
+                    <button id="insertComponent" class="btn-secondary">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Вставить компонент
+                    </button>
+                </div>
+                <div class="templates-list">
+                    <div class="template-item">Шаблон подписи</div>
+                    <div class="template-item selected">Блок цитаты</div>
+                    <div class="template-item">Информационный блок</div>
+                    <div class="template-item">Шаблон контактов</div>
+                </div>
+                <div class="template-controls">
+                    <button id="addTemplate" class="btn-primary">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Добавить шаблон
+                    </button>
+                    <button id="removeTemplate" class="btn-danger">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Удалить
+                    </button>
+                </div>
+                <input type="text" id="editTemplate" class="edit-template" placeholder="Редактировать шаблон" value="Блок цитаты">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация TinyMCE с полным набором функций
+        tinymce.init({
+            selector: '#main-editor',
+            plugins: [
+                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 
+                'image', 'link', 'lists', 'media', 'searchreplace', 
+                'table', 'visualblocks', 'wordcount', 'checklist', 
+                'mediaembed', 'casechange', 'formatpainter'
+            ],
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
+                     'link image media table | align lineheight | ' +
+                     'bullist numlist outdent indent | emoticons charmap | removeformat',
+            menubar: false,
+            statusbar: false,
+            height: '100%',
+            content_style: `
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #212529;
+                    padding: 16px;
+                }
+                h1, h2, h3 {
+                    color: #4361ee;
+                    margin-bottom: 0.75em;
+                }
+                p {
+                    margin-bottom: 1em;
+                }
+            `,
+            setup: function(editor) {
+                // Обработка кнопки вставки компонента
+                document.getElementById('insertComponent').addEventListener('click', function() {
+                    const selectedTemplate = document.querySelector('.template-item.selected').textContent;
+                    editor.insertContent(`<div class="template-block" data-template="${selectedTemplate}">
+                        <h3>${selectedTemplate}</h3>
+                        <p>Содержимое шаблона здесь...</p>
+                    </div>`);
+                });
+            }
+        });
+
+        // Инициализация панели шаблонов
+        document.addEventListener('DOMContentLoaded', function() {
+            // Выбор шаблона
+            document.querySelectorAll('.template-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.template-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    document.getElementById('editTemplate').value = this.textContent;
+                });
+            });
+            
+            // Добавление шаблона
+            document.getElementById('addTemplate').addEventListener('click', function() {
+                const newTemplate = prompt('Введите название нового шаблона:', 'Новый шаблон');
+                if (newTemplate) {
+                    const list = document.querySelector('.templates-list');
+                    const item = document.createElement('div');
+                    item.className = 'template-item';
+                    item.textContent = newTemplate;
+                    list.appendChild(item);
+                    
+                    // Добавляем обработчик для нового элемента
+                    item.addEventListener('click', function() {
+                        document.querySelectorAll('.template-item').forEach(i => i.classList.remove('selected'));
+                        this.classList.add('selected');
+                        document.getElementById('editTemplate').value = this.textContent;
+                    });
+                }
+            });
+            
+            // Удаление шаблона
+            document.getElementById('removeTemplate').addEventListener('click', function() {
+                const selected = document.querySelector('.template-item.selected');
+                if (selected && confirm(`Удалить шаблон "${selected.textContent}"?`)) {
+                    selected.remove();
+                }
+            });
+            
+            // Редактирование шаблона
+            document.getElementById('editTemplate').addEventListener('change', function() {
+                const selected = document.querySelector('.template-item.selected');
+                if (selected) {
+                    selected.textContent = this.value;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
